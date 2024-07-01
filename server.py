@@ -4,6 +4,7 @@ import configparser
 import ssl
 import logging
 import os
+import time
 
 # Load configuration settings
 config = configparser.ConfigParser()
@@ -14,18 +15,12 @@ linuxpath = config.get('Settings', 'linuxpath', fallback='./200k.txt')
 reread_on_query = config.getboolean('Settings', 'REREAD_ON_QUERY', fallback=True)
 
 # Get server host and port from the configuration
-HOST = 'localhost'  # Default value for the server host
-PORT = 12345  # Default value for the server port
-SSL_ENABLED = True  # Default value to enable SSL
-
-# Check if 'Server' section exists in the config file
-if 'Server' in config:
-    HOST = config.get('Server', 'host', fallback=HOST)
-    PORT = config.getint('Server', 'port', fallback=PORT)
-    SSL_ENABLED = config.getboolean('Server', 'ssl_enabled', fallback=SSL_ENABLED)
+HOST = config.get('Server', 'host', fallback='localhost')
+PORT = config.getint('Server', 'port', fallback=12345)
+SSL_ENABLED = config.getboolean('Server', 'ssl_enabled', fallback=True)
 
 # Set up logging to track server activity
-logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
+logging.basicConfig(level=logging.DEBUG, format='%(asctime)s - %(levelname)s - %(message)s')
 logger = logging.getLogger()
 
 class FileSearchServer:
@@ -50,24 +45,30 @@ class FileSearchServer:
         else:
             logger.info('SSL not enabled: Using plain TCP connections')
 
-    def handle_client(self, client_socket):
+    def handle_client(self, client_socket, client_address):
         # Handle client connections
         try:
             if SSL_ENABLED:
                 with self.ssl_context.wrap_socket(client_socket, server_side=True) as ssl_socket:
-                    data = ssl_socket.recv(1024).decode('utf-8')
-                    logger.info(f'Received query: {data}')
-                    response = self.process_query(data)
-                    ssl_socket.sendall(response.encode('utf-8'))
+                    self.process_request(ssl_socket, client_address)
             else:
-                data = client_socket.recv(1024).decode('utf-8')
-                logger.info(f'Received query: {data}')
-                response = self.process_query(data)
-                client_socket.sendall(response.encode('utf-8'))
+                self.process_request(client_socket, client_address)
         except Exception as e:
             logger.error(f'Error handling client: {e}')
         finally:
             client_socket.close()
+
+    def process_request(self, socket, client_address):
+        start_time = time.time()
+        try:
+            data = socket.recv(1024).decode('utf-8').rstrip('\x00')
+            logger.debug(f'Received query: {data} from {client_address}')
+            response = self.process_query(data)
+            socket.sendall((response + '\n').encode('utf-8'))
+            end_time = time.time()
+            logger.debug(f'Sent response: {response} to {client_address} in {end_time - start_time:.4f} seconds')
+        except Exception as e:
+            logger.error(f'Error processing request: {e}')
 
     def process_query(self, query):
         # Process the client query and return results
@@ -81,8 +82,10 @@ class FileSearchServer:
                         self.data = file.readlines()
                 data = self.data
 
-            results = [line for line in data if query in line]
-            return '\n'.join(results) if results else 'STRING NOT FOUND'
+            if any(line.strip() == query for line in data):
+                return 'STRING EXISTS'
+            else:
+                return 'STRING NOT FOUND'
         except FileNotFoundError:
             logger.error(f'File not found: {linuxpath}')
             return 'ERROR: File not found'
@@ -97,7 +100,7 @@ class FileSearchServer:
             try:
                 client_socket, client_address = self.server_socket.accept()
                 logger.info(f'Connection from {client_address}')
-                client_thread = threading.Thread(target=self.handle_client, args=(client_socket,))
+                client_thread = threading.Thread(target=self.handle_client, args=(client_socket, client_address))
                 client_thread.start()
             except Exception as e:
                 logger.error(f'Error accepting connections: {e}')
