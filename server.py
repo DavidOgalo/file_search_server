@@ -15,9 +15,15 @@ linuxpath = config.get('Settings', 'linuxpath', fallback='./200k.txt')
 reread_on_query = config.getboolean('Settings', 'REREAD_ON_QUERY', fallback=True)
 
 # Get server host and port from the configuration
-HOST = config.get('Server', 'host', fallback='localhost')
-PORT = config.getint('Server', 'port', fallback=12345)
-SSL_ENABLED = config.getboolean('Server', 'ssl_enabled', fallback=True)
+HOST = 'localhost'  # Default value for the server host
+PORT = 12345  # Default value for the server port
+SSL_ENABLED = True  # Default value to enable SSL
+
+# Check if 'Server' section exists in the config file
+if 'Server' in config:
+    HOST = config.get('Server', 'host', fallback=HOST)
+    PORT = config.getint('Server', 'port', fallback=PORT)
+    SSL_ENABLED = config.getboolean('Server', 'ssl_enabled', fallback=SSL_ENABLED)
 
 # Set up logging to track server activity
 logging.basicConfig(level=logging.DEBUG, format='%(asctime)s - %(levelname)s - %(message)s')
@@ -47,31 +53,28 @@ class FileSearchServer:
             logger.info('SSL not enabled: Using plain TCP connections')
 
     def handle_client(self, client_socket):
-        start_time = time.time()
         client_ip = client_socket.getpeername()[0]
+        start_time = time.time()
         try:
             if self.ssl_enabled:
                 with self.ssl_context.wrap_socket(client_socket, server_side=True) as ssl_socket:
                     data = ssl_socket.recv(1024).decode('utf-8').rstrip('\x00')
-                    logger.info(f'Received query: {data}')
+                    logger.debug(f"Received query: {data}")
                     response = self.process_query(data)
                     ssl_socket.sendall(response.encode('utf-8'))
             else:
                 data = client_socket.recv(1024).decode('utf-8').rstrip('\x00')
-                logger.info(f'Received query: {data}')
+                logger.debug(f"Received query: {data}")
                 response = self.process_query(data)
                 client_socket.sendall(response.encode('utf-8'))
-        except ssl.SSLError as e:
-            logger.error(f'SSL error: {e}')
-            client_socket.sendall('ERROR: SSL error\n'.encode('utf-8'))
+
+            execution_time = time.time() - start_time
+            logger.debug(f"Query: {data}, Requesting IP: {client_ip}, Execution Time: {execution_time:.4f}s, Timestamp: {time.strftime('%Y-%m-%d %H:%M:%S')}")
+
         except Exception as e:
             logger.error(f'Error handling client: {e}')
-            client_socket.sendall('ERROR: Internal server error\n'.encode('utf-8'))
         finally:
             client_socket.close()
-            end_time = time.time()
-            execution_time = end_time - start_time
-            logger.debug(f"Query: {data}, Requesting IP: {client_ip}, Execution Time: {execution_time}s, Timestamp: {time.strftime('%Y-%m-%d %H:%M:%S')}")
 
     def process_query(self, query):
         if not query:
