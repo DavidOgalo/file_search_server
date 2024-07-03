@@ -12,8 +12,6 @@ This project implements a Python-based server application designed to efficientl
 - [Installation](#installation)
 - [Usage](#usage)
 - [Configuration](#configuration)
-- [Contributing](#contributing)
-- [License](#license)
 
 ## Features
 
