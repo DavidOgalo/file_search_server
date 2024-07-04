@@ -1,7 +1,7 @@
 import time
+import os
 import random
 import string
-import os
 
 # Define the search algorithms
 def naive_search(data, query):
@@ -140,13 +140,6 @@ def rabin_karp_search(data, query):
 
     return results
 
-# Generate a large test file
-def generate_test_file(file_path, num_lines):
-    with open(file_path, 'w') as f:
-        for _ in range(num_lines):
-            line = ''.join(random.choices(string.ascii_letters + string.digits, k=20))
-            f.write(line + '\n')
-
 # Benchmark different search algorithms
 def benchmark_search_algorithms():
     results = []
@@ -158,26 +151,18 @@ def benchmark_search_algorithms():
         'rabin_karp': rabin_karp_search,
     }
 
-    # File sizes for benchmarking
-    file_sizes = [10000, 50000, 100000, 200000, 500000, 1000000]
+    file_path = './200k.txt'
+    with open(file_path, 'r') as file:
+        data = file.readlines()
 
-    for file_size in file_sizes:
-        file_path = f'./test_file_{file_size}.txt'
-        generate_test_file(file_path, file_size)
-
-        with open(file_path, 'r') as file:
-            data = file.readlines()
-
-        for algorithm_name, algorithm_func in algorithms.items():
-            start_time = time.time()
-            query = ''.join(random.choices(string.ascii_letters + string.digits, k=20))
-            algorithm_func(data, query)
-            end_time = time.time()
-            execution_time = end_time - start_time
-            results.append((file_size, algorithm_name, execution_time))
-            print(f'Algorithm: {algorithm_name}, File Size: {file_size}, Execution Time: {execution_time:.4f}s')
-
-        os.remove(file_path)
+    for algorithm_name, algorithm_func in algorithms.items():
+        start_time = time.time()
+        query = ''.join(random.choices(string.ascii_letters + string.digits, k=20))
+        algorithm_func(data, query)
+        end_time = time.time()
+        execution_time = end_time - start_time
+        results.append((algorithm_name, execution_time))
+        print(f'Algorithm: {algorithm_name}, Execution Time: {execution_time:.4f}s')
 
     return results
 
@@ -187,4 +172,4 @@ benchmark_results = benchmark_search_algorithms()
 # Save results to a file for the speed report
 with open('benchmark_results.txt', 'w') as f:
     for result in benchmark_results:
-        f.write(f'File Size: {result[0]}, Algorithm: {result[1]}, Execution Time: {result[2]:.4f}s\n')
+        f.write(f'Algorithm: {result[0]}, Execution Time: {result[1]:.4f}s\n')
