@@ -185,5 +185,9 @@ benchmark_results = benchmark_search_algorithms()
 
 # Save results to a file for the speed report
 with open('benchmark_results.txt', 'w') as f:
+    # Write the header
+    f.write(f"{'Algorithm':<20} {'File Size':<15} {'Execution Time (s)':<20}\n")
+    f.write("="*55 + "\n")
     for result in benchmark_results:
-        f.write(f'Algorithm: {result[0]}, File Size: {result[1]}, Execution Time: {result[2]:.4f}s\n')
+        f.write(f"{result[0]:<20} {result[1]:<15} {result[2]:<20.4f}\n")
+

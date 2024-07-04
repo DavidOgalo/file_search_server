@@ -1,30 +1,32 @@
-Algorithm: naive, File Size: 10000, Execution Time: 0.0007s
-Algorithm: binary, File Size: 10000, Execution Time: 0.0033s
-Algorithm: kmp, File Size: 10000, Execution Time: 0.0342s
-Algorithm: boyer_moore, File Size: 10000, Execution Time: 0.0045s
-Algorithm: rabin_karp, File Size: 10000, Execution Time: 0.0401s
-Algorithm: naive, File Size: 50000, Execution Time: 0.0039s
-Algorithm: binary, File Size: 50000, Execution Time: 0.0198s
-Algorithm: kmp, File Size: 50000, Execution Time: 0.1561s
-Algorithm: boyer_moore, File Size: 50000, Execution Time: 0.0258s
-Algorithm: rabin_karp, File Size: 50000, Execution Time: 0.2211s
-Algorithm: naive, File Size: 100000, Execution Time: 0.0081s
-Algorithm: binary, File Size: 100000, Execution Time: 0.0499s
-Algorithm: kmp, File Size: 100000, Execution Time: 0.3093s
-Algorithm: boyer_moore, File Size: 100000, Execution Time: 0.0393s
-Algorithm: rabin_karp, File Size: 100000, Execution Time: 0.3911s
-Algorithm: naive, File Size: 200000, Execution Time: 0.0159s
-Algorithm: binary, File Size: 200000, Execution Time: 0.1084s
-Algorithm: kmp, File Size: 200000, Execution Time: 0.6108s
-Algorithm: boyer_moore, File Size: 200000, Execution Time: 0.0882s
-Algorithm: rabin_karp, File Size: 200000, Execution Time: 0.7687s
-Algorithm: naive, File Size: 500000, Execution Time: 0.0375s
-Algorithm: binary, File Size: 500000, Execution Time: 0.2978s
-Algorithm: kmp, File Size: 500000, Execution Time: 1.5636s
-Algorithm: boyer_moore, File Size: 500000, Execution Time: 0.1947s
-Algorithm: rabin_karp, File Size: 500000, Execution Time: 1.8290s
-Algorithm: naive, File Size: 1000000, Execution Time: 0.0804s
-Algorithm: binary, File Size: 1000000, Execution Time: 0.6580s
-Algorithm: kmp, File Size: 1000000, Execution Time: 2.8786s
-Algorithm: boyer_moore, File Size: 1000000, Execution Time: 0.3511s
-Algorithm: rabin_karp, File Size: 1000000, Execution Time: 3.5941s
+Algorithm            File Size       Execution Time (s)  
+=======================================================
+naive                10000           0.0008              
+binary               10000           0.0036              
+kmp                  10000           0.0352              
+boyer_moore          10000           0.0040              
+rabin_karp           10000           0.0422              
+naive                50000           0.0036              
+binary               50000           0.0208              
+kmp                  50000           0.1572              
+boyer_moore          50000           0.0189              
+rabin_karp           50000           0.2083              
+naive                100000          0.0080              
+binary               100000          0.0475              
+kmp                  100000          0.3036              
+boyer_moore          100000          0.0400              
+rabin_karp           100000          0.3657              
+naive                200000          0.0170              
+binary               200000          0.1091              
+kmp                  200000          0.5907              
+boyer_moore          200000          0.0740              
+rabin_karp           200000          0.7592              
+naive                500000          0.0397              
+binary               500000          0.3019              
+kmp                  500000          1.4393              
+boyer_moore          500000          0.1801              
+rabin_karp           500000          1.8385              
+naive                1000000         0.0742              
+binary               1000000         0.6861              
+kmp                  1000000         2.8900              
+boyer_moore          1000000         0.3842              
+rabin_karp           1000000         3.4576              
