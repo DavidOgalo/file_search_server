@@ -83,3 +83,9 @@ Edit the `config.ini` file to configure the server settings:
 [Settings]
 linuxpath = /path/to/your/200k.txt
 REREAD_ON_QUERY = true
+
+[Server]
+host = localhost
+port = 12345
+# configure ssl_enabled to false then restart server to connect over plain TCP connections 
+ssl_enabled = true
