@@ -4,7 +4,6 @@ import configparser
 import ssl
 import logging
 import time
-import os
 
 # Load configuration settings
 config = configparser.ConfigParser()
@@ -15,15 +14,9 @@ linuxpath = config.get('Settings', 'linuxpath', fallback='./200k.txt')
 reread_on_query = config.getboolean('Settings', 'REREAD_ON_QUERY', fallback=True)
 
 # Get server host and port from the configuration
-HOST = 'localhost'  # Default value for the server host
-PORT = 12345  # Default value for the server port
-SSL_ENABLED = True  # Default value to enable SSL
-
-# Check if 'Server' section exists in the config file
-if 'Server' in config:
-    HOST = config.get('Server', 'host', fallback=HOST)
-    PORT = config.getint('Server', 'port', fallback=PORT)
-    SSL_ENABLED = config.getboolean('Server', 'ssl_enabled', fallback=SSL_ENABLED)
+HOST = config.get('Server', 'host', fallback='localhost')
+PORT = config.getint('Server', 'port', fallback=12345)
+SSL_ENABLED = config.getboolean('Server', 'ssl_enabled', fallback=True)
 
 # Set up logging to track server activity
 logging.basicConfig(level=logging.DEBUG, format='%(asctime)s - %(levelname)s - %(message)s')
@@ -38,8 +31,10 @@ class FileSearchServer:
         self.ssl_enabled = ssl_enabled
         self.server_socket = None
         self.ssl_context = None
+        self.data = None  # Cache the file data if reread_on_query is False
 
     def setup_server(self):
+        """Set up the server with or without SSL based on configuration."""
         self.server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         self.server_socket.bind((self.host, self.port))
         self.server_socket.listen(5)
@@ -53,6 +48,7 @@ class FileSearchServer:
             logger.info('SSL not enabled: Using plain TCP connections')
 
     def handle_client(self, client_socket):
+        """Handle client connections and process their queries."""
         client_ip = client_socket.getpeername()[0]
         start_time = time.time()
         try:
@@ -77,18 +73,18 @@ class FileSearchServer:
             client_socket.close()
 
     def process_query(self, query):
+        """Process the query received from the client."""
         if not query:
             return 'ERROR: Empty query\n'
         if len(query) > 1024:
             return 'ERROR: Payload too large\n'
         try:
-            if self.reread_on_query:
+            if self.reread_on_query or not self.data:
                 with open(self.linuxpath, 'r') as file:
                     data = file.readlines()
+                    if not self.reread_on_query:
+                        self.data = data
             else:
-                if not hasattr(self, 'data'):
-                    with open(self.linuxpath, 'r') as file:
-                        self.data = file.readlines()
                 data = self.data
 
             results = [line.strip() for line in data if line.strip() == query]
@@ -101,6 +97,7 @@ class FileSearchServer:
             return 'ERROR: Internal server error\n'
 
     def start(self):
+        """Start the server and handle incoming connections."""
         self.setup_server()
         while True:
             try:
