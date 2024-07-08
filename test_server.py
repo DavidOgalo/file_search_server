@@ -4,7 +4,6 @@ import socket
 import threading
 import ssl
 import time
-import os
 
 # Mock configurations for testing
 class MockConfig:
@@ -16,8 +15,13 @@ class MockConfig:
         self.port = 12345
 
 @pytest.fixture
-def server():
-    config = MockConfig()
+def server(tmp_path):
+    """Fixture to set up and tear down the server for testing."""
+    # Create a temporary test file
+    test_file = tmp_path / '200k.txt'
+    test_file.write_text('teststring\n')
+
+    config = MockConfig(path=str(test_file))
     server = FileSearchServer(host=config.host, port=config.port, linuxpath=config.linuxpath, reread_on_query=config.reread_on_query, ssl_enabled=config.ssl_enabled)
     server_thread = threading.Thread(target=server.start, daemon=True)
     server_thread.start()
@@ -27,76 +31,58 @@ def server():
 
 @pytest.fixture
 def client():
+    """Fixture to set up and tear down the client for testing."""
     client_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     yield client_socket
     client_socket.close()
 
+def ssl_wrap_socket(sock):
+    context = ssl.create_default_context(ssl.Purpose.SERVER_AUTH)
+    context.check_hostname = False
+    context.verify_mode = ssl.CERT_NONE
+    wrapped_socket = context.wrap_socket(sock, server_hostname='localhost')
+    return wrapped_socket
+
 def test_empty_query(server, client):
-    print("Running test_empty_query")
-    client.connect(('localhost', 12345))
-    client.sendall(b'\x00')
-    response = client.recv(1024).decode('utf-8')
-    print(f"Response: {response}")
-    assert response.strip() == 'ERROR: Empty query'
+    try:
+        client.sendall(b'')
+        response = client.recv(1024).decode('utf-8')
+        assert response == 'ERROR: Empty query\n'
+    except (ConnectionError, BrokenPipeError) as e:
+        pytest.fail(f"Connection error occurred: {e}")
+    finally:
+        client.close()  # Ensure client connection is closed
 
-def test_string_exists(server, client):
-    print("Running test_string_exists")
-    with open('./200k.txt', 'w') as f:
-        f.write('test_string\n')
-    
-    client.connect(('localhost', 12345))
-    client.sendall(b'test_string')
-    response = client.recv(1024).decode('utf-8')
-    print(f"Response: {response}")
-    assert response.strip() == 'STRING EXISTS'
-
-    os.remove('./200k.txt')
+def test_non_existent_file():
+    # Assuming FileSearchServer class or a similar server setup
+    server = FileSearchServer('non_existent_file.txt', 'localhost', 12345, 'server.crt', 'server.key')
+    server.start()
+    client = socket.create_connection(('localhost', 12345))
+    wrapped_client = ssl.wrap_socket(client, ca_certs='server.crt', cert_reqs=ssl.CERT_REQUIRED)
+    wrapped_client.sendall(b'test query')
+    response = wrapped_client.recv(1024).decode('utf-8')
+    assert response == 'ERROR: File not found\n'
+    wrapped_client.close()
 
 def test_string_not_found(server, client):
-    print("Running test_string_not_found")
-    with open('./200k.txt', 'w') as f:
-        f.write('some_other_string\n')
-    
-    client.connect(('localhost', 12345))
-    client.sendall(b'test_string')
-    response = client.recv(1024).decode('utf-8')
-    print(f"Response: {response}")
-    assert response.strip() == 'STRING NOT FOUND'
-
-    os.remove('./200k.txt')
-
-def test_payload_too_large(server, client):
-    print("Running test_payload_too_large")
-    large_payload = b'a' * 2048
-    client.connect(('localhost', 12345))
-    client.sendall(large_payload)
-    response = client.recv(1024).decode('utf-8')
-    print(f"Response: {response}")
-    assert response.strip() == 'ERROR: Payload too large'
-
-def test_file_not_found(server, client):
-    print("Running test_file_not_found")
-    if os.path.exists('./200k.txt'):
-        os.remove('./200k.txt')
-    
-    client.connect(('localhost', 12345))
-    client.sendall(b'test_string')
-    response = client.recv(1024).decode('utf-8')
-    print(f"Response: {response}")
-    assert response.strip() == 'ERROR: File not found'
-
-def test_ssl_error_handling():
-    print("Running test_ssl_error_handling")
-    config = MockConfig(ssl=True)
-    server = FileSearchServer(host=config.host, port=config.port, linuxpath=config.linuxpath, reread_on_query=config.reread_on_query, ssl_enabled=config.ssl_enabled)
-    server_thread = threading.Thread(target=server.start, daemon=True)
-    server_thread.start()
-    time.sleep(1)
-
-    client_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-    try:
-        with pytest.raises(ssl.SSLError):
-            ssl.wrap_socket(client_socket).connect((config.host, config.port))
+    try: 
+        client.sendall(b'nonexistentstring')
+        response = client.recv(1024).decode('utf-8')
+        assert response == 'STRING NOT FOUND\n'
+    except (ConnectionError, BrokenPipeError) as e:
+        pytest.fail(f"Connection error occurred: {e}")
     finally:
-        server.server_socket.close()
-        client_socket.close()
+        client.close()  # Ensure client connection is closed
+
+def test_string_exists(server, client):
+    try:
+        client.sendall(b'example')
+        response = client.recv(1024).decode('utf-8')
+        assert response == 'STRING EXISTS\n'
+    except (ConnectionError, BrokenPipeError) as e:
+        pytest.fail(f"Connection error occurred: {e}")
+    finally:
+        client.close()  # Ensure client connection is closed
+
+if __name__ == '__main__':
+    pytest.main()

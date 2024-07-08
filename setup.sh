@@ -6,7 +6,7 @@ sudo apt install -y python3 python3-pip git
 
 # Clone the GitHub repository
 echo "Cloning the repository..."
-git clone https://github.com/your-username/file_search_server.git
+git clone https://github.com/DavidOgalo/file_search_server.git
 cd file_search_server
 
 # Download the data file

@@ -24,6 +24,7 @@ class FileSearchClient:
         self.ssl_context = None
 
     def setup_ssl(self):
+        """Set up SSL context if SSL is enabled."""
         if self.ssl_enabled:
             self.ssl_context = ssl.create_default_context()
             self.ssl_context.check_hostname = False
@@ -33,6 +34,7 @@ class FileSearchClient:
             logger.info('SSL not enabled: Using plain TCP connections')
 
     def send_query(self, query):
+        """Send a query to the server and return the response."""
         if not query.strip():
             logger.error('Error: Empty query string')
             return 'ERROR: Empty query'
