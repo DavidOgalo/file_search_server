@@ -2,7 +2,7 @@
 
 # Install necessary packages
 sudo apt update
-sudo apt install -y python3 python3-pip git
+sudo apt install -y python3 python3-pip git openssl
 
 # Clone the GitHub repository
 echo "Cloning the repository..."
@@ -19,6 +19,17 @@ cat <<EOL > config.ini
 [Settings]
 linuxpath = $(pwd)/200k.txt
 REREAD_ON_QUERY = true
+
+[Server]
+host = localhost
+port = 12345
+ssl_enabled = true
 EOL
+
+# Generate SSL certificate and key
+echo "Generating SSL certificate and key..."
+openssl genpkey -algorithm RSA -out server.key -pkeyopt rsa_keygen_bits:2048
+openssl req -new -key server.key -out server.csr
+openssl x509 -req -days 365 -in server.csr -signkey server.key -out server.crt
 
 echo "Setup complete!"
